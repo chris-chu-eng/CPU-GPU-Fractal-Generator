@@ -1,35 +1,9 @@
 import pygame
+from engine import calculate
 
 #PROGRAM CONTROL - adjust window size and quality/speed tradeoff
 WIDTH, HEIGHT = 800, 600
 QUALITY = 30 #lower values are faster but more inaccurate
-
-def verify_point(coordinate, max_iterations):
-    """Tests if a point is in the Mandelbrot set
-
-    Args:
-        coordinate (complex): The point on the screen to test.
-        max_iterations (int): The limit of tests to perform on the point.
-
-    Returns:
-        tuple: An (R, G, B) color tuple. Black if the point is in the set,
-               or a calculated color if it is not.
-    """
-
-    z = 0
-    iterations = 0
-
-    while abs(z) <= 2 and iterations < max_iterations:
-        z = z*z + coordinate
-        iterations+= 1
-
-    if iterations == max_iterations:
-        return (0, 0, 0)
-    
-    blue = (iterations % 16) * 16
-    red = (iterations % 8) * 32
-    green = (iterations % 4) * 64
-    return (red, green, blue)
 
 def main():
     """Initializes Pygame and runs the main application loop.
@@ -54,20 +28,19 @@ def main():
         if y < HEIGHT:
             centered_x = x - (WIDTH / 2)
             centered_y = y - (HEIGHT / 2)
-            scaled_real = centered_x / WIDTH * 4
-            scaled_imag = centered_y / HEIGHT * 4
-            current_point = complex(scaled_real, scaled_imag)
+            scaled_x = centered_x / WIDTH * 4
+            scaled_y = centered_y / HEIGHT * 4
+            translated_pixel = complex(scaled_x, scaled_y)
             
-            color = verify_point(coordinate=current_point, max_iterations=QUALITY)
-            screen.set_at((x, y), color)
+            pixel_color = calculate(coordinate=translated_pixel, max_iterations=QUALITY)
+            screen.set_at((x, y), pixel_color)
+            pygame.display.flip()
 
             x += 1
             if x >= WIDTH:
                 x = 0
                 y += 1
             
-            pygame.display.flip()
-
     pygame.quit()
 
 if __name__ == '__main__':
