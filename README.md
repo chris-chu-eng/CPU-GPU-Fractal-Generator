@@ -18,13 +18,13 @@ This project was built to demonstrate a foundational understanding of computer a
 ## How to Run
 
 ### Prerequisites
-- Python 3.x
+- Python 3.13.7
 - An NVIDIA GPU with the CUDA Toolkit installed (required for `main_gpu.py`).
 
 ### Setup
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/chris-chu-eng/CPU-GPU-Fractal-Generator.git](https://github.com/chris-chu-eng/CPU-GPU-Fractal-Generator.git)
+    git clone https://github.com/chris-chu-eng/CPU-GPU-Fractal-Generator.git
     ```
 2.  **Navigate to the project directory:**
     ```bash
@@ -33,8 +33,15 @@ This project was built to demonstrate a foundational understanding of computer a
 3.  **Create and activate a virtual environment:**
     ```bash
     python -m venv venv
-    .\venv\Scripts\activate
     ```
+    - **On Windows:**
+        ```bash
+        .\venv\Scripts\activate
+        ```
+    - **On macOS/Linux:**
+        ```bash
+        source venv/bin/activate
+        ```
 4.  **Install the required dependencies:**
     ```bash
     pip install -r requirements.txt
