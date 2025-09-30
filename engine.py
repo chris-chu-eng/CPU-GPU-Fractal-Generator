@@ -1,6 +1,7 @@
 import numpy as np
 import cupy as cp
 
+
 def calculate_fractal_cpu(coordinate, max_iterations):
     """Tests a single point on the CPU to determine its Mandelbrot set iteration count.
 
@@ -16,10 +17,11 @@ def calculate_fractal_cpu(coordinate, max_iterations):
     iterations = 0
 
     while abs(z) <= 2 and iterations < max_iterations:
-        z = z*z + coordinate
-        iterations+= 1
+        z = z * z + coordinate
+        iterations += 1
 
     return iterations
+
 
 def colorer(current_iterations, max_iterations):
     """Converts a final iteration count into an RGB color tuple.
@@ -35,11 +37,12 @@ def colorer(current_iterations, max_iterations):
     """
     if current_iterations == max_iterations:
         return (0, 0, 0)
-    
+
     blue = (current_iterations % 16) * 16
     red = (current_iterations % 8) * 32
     green = (current_iterations % 4) * 64
     return (red, green, blue)
+
 
 def calculate_fractal_gpu(width, height, max_iterations):
     """Creates a coordinate grid and calculates Mandelbrot iteration counts on the GPU.
@@ -66,5 +69,5 @@ def calculate_fractal_gpu(width, height, max_iterations):
         not_escaped_mask = cp.abs(gpu_z) <= 2
         gpu_z[not_escaped_mask] = gpu_z[not_escaped_mask]**2 + gpu_gridbase[not_escaped_mask]
         gpu_iterations[not_escaped_mask] += 1
-    
+
     return cp.asnumpy(gpu_iterations)

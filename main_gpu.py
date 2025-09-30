@@ -3,9 +3,10 @@ import numpy as np
 import cupy as cp
 from engine import calculate_fractal_gpu, colorer
 
-#PROGRAM CONTROL - adjust window size and quality/speed tradeoff
+# PROGRAM CONTROL - adjust window size and quality/speed tradeoff
 WIDTH, HEIGHT = 800, 600
-QUALITY = 30 #lower values are faster but more inaccurate
+QUALITY = 30  # lower values are faster but more inaccurate
+
 
 def create_image(width, height, iteration_grid, max_iterations):
     """Takes a grid of iteration counts and converts it into a colored Pygame surface.
@@ -30,6 +31,7 @@ def create_image(width, height, iteration_grid, max_iterations):
 
     return image
 
+
 def main():
     """Main application function for the GPU renderer.
 
@@ -40,20 +42,21 @@ def main():
     pygame.display.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Fractal Visualizer: GPU Rendering")
-    
+
     iteration_grid = calculate_fractal_gpu(WIDTH, HEIGHT, QUALITY)
     finished_image = create_image(WIDTH, HEIGHT, iteration_grid, QUALITY)
-    
+
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-        
+
         screen.blit(finished_image, (0, 0))
         pygame.display.flip()
 
     pygame.quit()
+
 
 if __name__ == '__main__':
     main()
