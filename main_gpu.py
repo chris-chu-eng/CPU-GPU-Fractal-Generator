@@ -1,11 +1,13 @@
+#!/usr/bin/env python3
 import pygame
 import numpy as np
 import cupy as cp
 from engine import calculate_fractal_gpu, colorer
 
 # PROGRAM CONTROL - adjust window size and quality/speed tradeoff
+# lower values for width, height, and quality increase rendering speed
 WIDTH, HEIGHT = 800, 600
-QUALITY = 30  # lower values are faster but more inaccurate
+QUALITY = 25
 
 
 def create_image(width, height, iteration_grid, max_iterations):
@@ -40,7 +42,7 @@ def main():
     to show the finished image.
     """
     pygame.display.init()
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    app_window = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption("Fractal Visualizer: GPU Rendering")
 
     iteration_grid = calculate_fractal_gpu(WIDTH, HEIGHT, QUALITY)
@@ -52,7 +54,13 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
-        screen.blit(finished_image, (0, 0))
+            elif event.type == pygame.VIDEORESIZE:
+                current_width, current_height = event.size
+                app_window = pygame.display.set_mode((current_width, current_height), pygame.RESIZABLE)
+                iteration_grid = calculate_fractal_gpu(current_width, current_height, QUALITY)
+                finished_image = create_image(current_width, current_height, iteration_grid, QUALITY)
+
+        app_window.blit(finished_image, (0, 0))
         pygame.display.flip()
 
     pygame.quit()
