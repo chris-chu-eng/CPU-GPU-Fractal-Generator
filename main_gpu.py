@@ -48,6 +48,7 @@ def main():
     iteration_grid = calculate_fractal_gpu(WIDTH, HEIGHT, QUALITY)
     finished_image = create_image(WIDTH, HEIGHT, iteration_grid, QUALITY)
 
+    current_width, current_height = WIDTH, HEIGHT
     running = True
     while running:
         for event in pygame.event.get():
@@ -57,6 +58,18 @@ def main():
             elif event.type == pygame.VIDEORESIZE:
                 current_width, current_height = event.size
                 app_window = pygame.display.set_mode((current_width, current_height), pygame.RESIZABLE)
+
+                scaled_old_image = pygame.transform.scale(finished_image, (current_width, current_height))
+                app_window.blit(scaled_old_image, (0, 0))
+                pygame.display.flip()
+
+                iteration_grid = calculate_fractal_gpu(current_width, current_height, QUALITY)
+                finished_image = create_image(current_width, current_height, iteration_grid, QUALITY)
+
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                app_window.fill((0, 0, 0))
+                pygame.display.flip()
+
                 iteration_grid = calculate_fractal_gpu(current_width, current_height, QUALITY)
                 finished_image = create_image(current_width, current_height, iteration_grid, QUALITY)
 
