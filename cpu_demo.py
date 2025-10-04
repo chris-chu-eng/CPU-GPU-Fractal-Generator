@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import pygame
-from engine import calculate_fractal_cpu, colorer
+from engine import pixel_to_complex_cpu, calculate_fractal_cpu, colorer_cpu
 
 # PROGRAM CONTROL - adjust window size and quality/speed tradeoff
 # lower values for width, height, and quality increase rendering speed
-WIDTH, HEIGHT = 800, 600
+WIDTH, HEIGHT = 640, 480
 QUALITY = 25
 
 
@@ -21,11 +21,11 @@ def main():
 
     current_width, current_height = WIDTH, HEIGHT
     x, y = 0, 0
-    running = True
-    while running:
+    app_running = True
+    while app_running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                app_running = False
 
             elif event.type == pygame.VIDEORESIZE:
                 current_width, current_height = event.size
@@ -37,15 +37,9 @@ def main():
                 x, y = 0, 0
 
         if y < current_height:
-            centered_x = x - (current_width / 2)
-            centered_y = y - (current_height / 2)
-            scaled_x = centered_x / current_width * 4
-            scaled_y = centered_y / current_height * 4
-            translated_pixel = complex(scaled_x, scaled_y)
-
+            translated_pixel = pixel_to_complex_cpu(x, y, current_width, current_height)
             iteration_count = calculate_fractal_cpu(translated_pixel, QUALITY)
-            pixel_color = colorer(iteration_count, QUALITY)
-
+            pixel_color = colorer_cpu(iteration_count, QUALITY)
             app_window.set_at((x, y), pixel_color)
             pygame.display.flip()
 

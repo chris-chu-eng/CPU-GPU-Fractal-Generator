@@ -1,8 +1,32 @@
-import numpy as np
+import pygame
+
 import cupy as cp
+from cupy import RawKernel  # type: ignore
+
+import numpy as np
+from numpy.typing import NDArray
 
 
-def calculate_fractal_cpu(coordinate, max_iterations):
+def pixel_to_complex_cpu(x: int, y: int, width: int, height: int) -> complex:
+    """Converts a pixel coordinate to a point on the complex plane.
+
+    Args:
+        x (int): The x-coordinate of the pixel.
+        y (int): The y-coordinate of the pixel.
+        width (int): The total width of the application window.
+        height (int): The total height of the application window.
+
+    Returns:
+        complex: The corresponding complex number for the given pixel.
+    """
+    centered_x = x - (width / 2)
+    centered_y = y - (height / 2)
+    scaled_x = centered_x / width * 4
+    scaled_y = centered_y / height * 4
+    return complex(scaled_x, scaled_y)
+
+
+def calculate_fractal_cpu(coordinate: complex, max_iterations: int) -> int:
     """Tests a single point on the CPU to determine its Mandelbrot set iteration count.
 
     Args:
@@ -23,7 +47,7 @@ def calculate_fractal_cpu(coordinate, max_iterations):
     return iterations
 
 
-def colorer(current_iterations, max_iterations):
+def colorer_cpu(current_iterations: int, max_iterations: int) -> tuple[int, int, int]:
     """Converts a final iteration count into an RGB color tuple.
 
     Args:
@@ -44,30 +68,98 @@ def colorer(current_iterations, max_iterations):
     return (red, green, blue)
 
 
-def calculate_fractal_gpu(width, height, max_iterations):
-    """Creates a coordinate grid and calculates Mandelbrot iteration counts on the GPU.
+def calculate_fractal_gpu(width: int, height: int, max_iterations: int) -> np.ndarray:
+    """Generates a grid of Mandelbrot set iteration counts on the GPU using a custom CUDA kernel.
 
     Args:
         width (int): The width of the image in pixels.
         height (int): The height of the image in pixels.
-        max_iterations (int): The limit of iterations to perform for each point.
+        max_iterations (int): The iteration limit for each point.
 
     Returns:
-        numpy.ndarray: A 2D NumPy array containing the final iteration
-                       count for every pixel, copied back from the GPU.
+        numpy.ndarray: A 2D array containing the final iteration count for each pixel.
     """
+    mandelbrot_kernel_code = r'''
+    #include <cupy/complex.cuh>
+
+    extern "C" __global__
+    void mandelbrot_kernel(const complex<double>* initial_grid, int* output_iterations,
+                            int max_iterations, int width, int height) {
+
+        int x = blockDim.x * blockIdx.x + threadIdx.x;
+        int y = blockDim.y * blockIdx.y + threadIdx.y;
+
+        if (x >= width || y >= height) {
+            return;
+        }
+
+        int index = y * width + x;
+
+        complex<double> c = initial_grid[index];
+        complex<double> z = 0;
+        int n = 0;
+
+        while (abs(z) <= 2.0 && n < max_iterations) {
+            z = z * z + c;
+            n++;
+        }
+        output_iterations[index] = n;
+    }
+    '''
     real_axis = np.linspace(-2.0, 2.0, width, dtype=np.float64)
     imaginary_axis = np.linspace(-2.0, 2.0, height, dtype=np.float64)
     x_grid, y_grid = np.meshgrid(real_axis, imaginary_axis)
     cpu_gridbase = x_grid + (y_grid * 1j)
 
-    gpu_gridbase = cp.asarray(cpu_gridbase)
-    gpu_z = cp.zeros_like(gpu_gridbase)
-    gpu_iterations = cp.zeros_like(gpu_gridbase, dtype=int)
+    gpu_gridbase: NDArray[cp.complex128] = cp.asarray(cpu_gridbase)  # type: ignore
+    gpu_iterations: NDArray[cp.int32] = cp.zeros(gpu_gridbase.shape, dtype=cp.int32)  # type: ignore
 
-    for _ in range(max_iterations):
-        not_escaped_mask = cp.abs(gpu_z) <= 2
-        gpu_z[not_escaped_mask] = gpu_z[not_escaped_mask]**2 + gpu_gridbase[not_escaped_mask]
-        gpu_iterations[not_escaped_mask] += 1
+    mandelbrot_kernel: RawKernel = cp.RawKernel(mandelbrot_kernel_code, 'mandelbrot_kernel')  # type: ignore
 
-    return cp.asnumpy(gpu_iterations)
+    threads_per_block = (16, 16)
+    blocks_per_grid_x = (width + threads_per_block[0] - 1) // threads_per_block[0]
+    blocks_per_grid_y = (height + threads_per_block[1] - 1) // threads_per_block[1]
+    blocks_per_grid = (blocks_per_grid_x, blocks_per_grid_y)
+
+    mandelbrot_kernel(
+        blocks_per_grid,
+        threads_per_block,
+        (gpu_gridbase, gpu_iterations, max_iterations, width, height)
+    )
+
+    return cp.asnumpy(gpu_iterations)  # type: ignore
+
+
+def colorer_gpu(iteration_grid: np.ndarray, max_iterations: int) -> pygame.Surface:
+    """Generates a colored Pygame surface from Mandelbrot set iteration data.
+
+    Uses NumPy's vectorization to convert a 2D grid of iteration counts into a colored image.
+
+    Args:
+        iteration_grid (numpy.ndarray): A 2D NumPy array of integers where each
+                                        value is the final iteration count for
+                                        a corresponding pixel. The shape is
+                                        (height, width).
+        max_iterations (int): The maximum number of iterations that was used to
+                              generate the grid. This value is used to identify
+                              points inside the Mandelbrot set.
+
+    Returns:
+        pygame.Surface: A Pygame surface object ready to be displayed.
+    """
+    transposed_grid = iteration_grid.T
+    width, height = transposed_grid.shape
+    rgb_pixel_array = np.zeros((width, height, 3), dtype=np.uint8)
+
+    escaped_pixels_mask = transposed_grid != max_iterations
+    escaped_pixel_iterations = transposed_grid[escaped_pixels_mask]
+
+    red_channel = (escaped_pixel_iterations % 8) * 32
+    green_channel = (escaped_pixel_iterations % 4) * 64
+    blue_channel = (escaped_pixel_iterations % 16) * 16
+
+    rgb_pixel_array[escaped_pixels_mask, 0] = red_channel
+    rgb_pixel_array[escaped_pixels_mask, 1] = green_channel
+    rgb_pixel_array[escaped_pixels_mask, 2] = blue_channel
+
+    return pygame.surfarray.make_surface(rgb_pixel_array)
