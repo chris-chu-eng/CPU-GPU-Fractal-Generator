@@ -1,0 +1,19 @@
+# Set the line length to match black
+line-length = 88
+
+[lint]
+# E = pycodestyle errors, F = PyFlakes, W = pycodestyle warnings
+select = ["E", "F", "W"]
+ignore = []
+
+# Exclude directories
+exclude = [
+    ".git",
+    ".vscode",
+    "__pycache__",
+    "venv",
+]
+
+# Helps Ruff coexist with Black
+[format]
+quote-style = "double"

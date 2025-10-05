@@ -29,7 +29,9 @@ def main():
 
             elif event.type == pygame.VIDEORESIZE:
                 current_width, current_height = event.size
-                app_window = pygame.display.set_mode((current_width, current_height), pygame.RESIZABLE)
+                app_window = pygame.display.set_mode(
+                    (current_width, current_height), pygame.RESIZABLE
+                )
                 x, y = 0, 0
 
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
@@ -51,5 +53,5 @@ def main():
     pygame.quit()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
