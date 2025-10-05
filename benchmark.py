@@ -10,7 +10,14 @@ WIDTH, HEIGHT = 1280, 480
 QUALITY = 2500
 
 
-def generate_cpu_half(x: int, y: int, window: pygame.Surface, width: int, height: int, stop_event: threading.Event):
+def generate_cpu_half(
+    x: int,
+    y: int,
+    window: pygame.Surface,
+    width: int,
+    height: int,
+    stop_event: threading.Event,
+):
     while y < height and not stop_event.is_set():
         translated_pixel = pixel_to_complex_cpu(x, y, width, height)
         iteration_count = calculate_fractal_cpu(translated_pixel, QUALITY)
@@ -42,12 +49,12 @@ def main():
     cpu_thread = threading.Thread(
         target=generate_cpu_half,
         args=(0, 0, cpu_window, half_width, HEIGHT, stop_event),
-        daemon=True
+        daemon=True,
     )
     gpu_thread = threading.Thread(
         target=generate_gpu_half,
         args=(gpu_window, half_width, HEIGHT),
-        daemon=True
+        daemon=True,
     )
     cpu_thread.start()
     gpu_thread.start()
@@ -68,5 +75,5 @@ def main():
     pygame.quit()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -17,7 +17,7 @@ This project was built to demonstrate a foundational understanding of computer a
 ## How to Run
 
 ### Prerequisites
-- Python 3.10 - 3.12 (Officially Supported). Newer versions may work but are not guaranteed.
+- Python 3.9 - 3.12 (Officially Supported). Newer versions may work but are not guaranteed.
 - An NVIDIA GPU with the CUDA Toolkit installed (required for GPU features).
 
 ### Setup
