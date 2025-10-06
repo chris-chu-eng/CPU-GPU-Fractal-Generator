@@ -4,6 +4,14 @@ from state import AppState
 from engine import calculate_fractal_gpu, colorer_gpu
 
 
+def calculate_and_draw(state: AppState, window: pygame.Surface) -> None:
+    """Calculates the fractal, colors it, and draws it to the window."""
+    iteration_grid = calculate_fractal_gpu(state)
+    finished_image = colorer_gpu(iteration_grid, state.quality)
+    window.blit(finished_image, (0, 0))
+    pygame.display.flip()
+
+
 def main():
     """Main application function for the GPU renderer.
 
@@ -18,11 +26,7 @@ def main():
     )
     pygame.display.set_caption("Fractal Visualizer: GPU Rendering in Parallel")
 
-    iteration_grid = calculate_fractal_gpu(app_state)
-    finished_image = colorer_gpu(iteration_grid, app_state.quality)
-
-    app_window.blit(finished_image, (0, 0))
-    pygame.display.flip()
+    calculate_and_draw(app_state, app_window)
 
     app_running = True
     while app_running:
@@ -37,25 +41,13 @@ def main():
                 (app_state.width, app_state.height), pygame.RESIZABLE
             )
 
-            scaled_old_image = pygame.transform.scale(
-                finished_image, (app_state.width, app_state.height)
-            )
-            app_window.blit(scaled_old_image, (0, 0))
-            pygame.display.flip()
-
-            iteration_grid = calculate_fractal_gpu(app_state)
-            finished_image = colorer_gpu(iteration_grid, app_state.quality)
-            app_window.blit(finished_image, (0, 0))
-            pygame.display.flip()
+            calculate_and_draw(app_state, app_window)
 
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
             app_window.fill((0, 0, 0))
             pygame.display.flip()
 
-            iteration_grid = calculate_fractal_gpu(app_state)
-            finished_image = colorer_gpu(iteration_grid, app_state.quality)
-            app_window.blit(finished_image, (0, 0))
-            pygame.display.flip()
+            calculate_and_draw(app_state, app_window)
 
     pygame.quit()
 

@@ -5,7 +5,7 @@ from state import AppState
 from engine import pixel_to_complex_cpu, calculate_fractal_cpu, colorer_cpu
 
 
-def render_fractal(
+def calculate_fractal(
     window: pygame.Surface, state: AppState, stop_event: threading.Event
 ):
     """
@@ -28,6 +28,20 @@ def render_fractal(
             y += 1
 
 
+def start_render_thread(window: pygame.Surface, app_state: AppState):
+    stop_event = threading.Event()
+
+    render_thread = threading.Thread(
+        target=calculate_fractal,
+        args=(window, app_state, stop_event),
+        daemon=True,
+    )
+
+    render_thread.start()
+
+    return render_thread, stop_event
+
+
 def main():
     """Initializes Pygame and runs the main application loop."""
     pygame.display.init()
@@ -38,14 +52,7 @@ def main():
     pygame.display.set_caption("Fractal Visualizer: CPU Rendering Pixel by Pixel")
 
     window = pygame.Surface((app_state.width, app_state.height))
-    stop_event = threading.Event()
-    render_thread = threading.Thread(
-        target=render_fractal,
-        args=(window, app_state, stop_event),
-        daemon=True,
-    )
-
-    render_thread.start()
+    cpu_thread, stop_event = start_render_thread(window, app_state)
 
     app_running = True
     while app_running:
@@ -63,31 +70,18 @@ def main():
                 )
                 window = pygame.Surface((app_state.width, app_state.height))
 
-                stop_event = threading.Event()
-                render_thread = threading.Thread(
-                    target=render_fractal,
-                    args=(window, app_state, stop_event),
-                    daemon=True,
-                )
-
-                render_thread.start()
+                cpu_thread, stop_event = start_render_thread(window, app_state)
 
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                 stop_event.set()
                 window.fill((0, 0, 0))
 
-                stop_event = threading.Event()
-                render_thread = threading.Thread(
-                    target=render_fractal,
-                    args=(window, app_state, stop_event),
-                    daemon=True,
-                )
-
-                render_thread.start()
+                cpu_thread, stop_event = start_render_thread(window, app_state)
 
         app_window.blit(window, (0, 0))
         pygame.display.flip()
 
+    cpu_thread.join(timeout=1.0)
     pygame.quit()
 
 

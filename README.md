@@ -7,10 +7,11 @@ This project was built to demonstrate a foundational understanding of computer a
 ---
 
 ## Features
-- **Side-by-Side Benchmark**: A multithreaded application (`benchmark.py`) that runs the CPU and GPU renderers simultaneously to provide a direct, visual comparison of serial vs. parallel performance.
-- **Live CPU Renderer**: A standalone demo (`cpu_demo.py`) that renders the fractal live, pixel-by-pixel, to visually demonstrate a serial workload.
-- **Instant GPU Renderer**: A standalone demo (`gpu_demo.py`) that uses an NVIDIA GPU and a custom CUDA kernel to render the entire fractal almost instantly.
-- **Modular Codebase**: The project is organized with a separation of concerns, with calculation logic in `engine.py` and application logic in the demo and benchmark files.
+- **Side-by-Side Benchmark**: A multithreaded application (`benchmark.py`) that runs the CPU and GPU renderers simultaneously to provide a direct, visual comparison of serial vs. parallel performance. Includes performance timers to provide quantitative results.
+- **Live CPU Renderer**: A standalone demo (`cpu_demo.py`) that uses multithreading to render the fractal live without freezing the UI, ensuring a responsive user experience.
+- **Instant GPU Renderer**: A standalone demo (`gpu_demo.py`) that uses an NVIDIA GPU and a custom CUDA kernel to render the entire fractal almost instantly. The UI is highly efficient, using an event-driven loop to minimize CPU usage.
+- **Unit Tested**: Core logic is validated by a suite of unit tests using Python's built-in `unittest` framework.
+- **Modular Codebase**: The project is organized with a separation of concerns, with a central `AppState` class for configuration, calculation logic in `engine.py`, and application logic in the demo/benchmark files.
 
 ---
 
@@ -60,6 +61,12 @@ This project was built to demonstrate a foundational understanding of computer a
     python gpu_demo.py
     ```
 
+### Running Tests
+- To run the unit test suite:
+    ```bash
+    python -m unittest discover
+    ```
+
 ---
 
 ## Technologies Used
@@ -68,6 +75,7 @@ This project was built to demonstrate a foundational understanding of computer a
 - **NumPy** (for efficient CPU array creation)
 - **CuPy** (for GPU-accelerated operations)
 - **CUDA** (for the custom GPU kernel)
-- **Multithreading** (for the benchmark application)
+- **Multithreading** (for responsive UI and benchmarking)
+- **Unit Testing** (with the `unittest` framework)
 - **Git / GitHub** (for version control)
 - **GitHub Actions** (for Continuous Integration)

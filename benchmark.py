@@ -28,8 +28,9 @@ def generate_cpu_half(
             y += 1
 
     end_time = time.perf_counter()
-    elapsed_time = (end_time - start_time) * 1000
-    print(f"CPU rendering: {elapsed_time:.2f} ms")
+    if not stop_event.is_set():
+        elapsed_time = (end_time - start_time) * 1000
+        print(f"CPU rendering: {elapsed_time:.2f} ms")
 
 
 def generate_gpu_half(window: pygame.Surface, state: AppState):
@@ -48,31 +49,48 @@ def generate_gpu_half(window: pygame.Surface, state: AppState):
     print(f"GPU rendering: {elapsed_time:.2f} ms")
 
 
-def main():
-    """Initializes Pygame and runs the main benchmark application loop."""
-    pygame.display.init()
-    app_state = AppState(width=1280, height=480, quality=2500)
-    app_window = pygame.display.set_mode((app_state.width, app_state.height))
-    pygame.display.set_caption("Fractal Visualizer: CPU (Left) vs GPU (Right)")
-
-    half_width = app_state.width // 2
-    cpu_window = pygame.Surface((half_width, app_state.height))
-    gpu_window = pygame.Surface((half_width, app_state.height))
+def start_render_threads(
+    state: AppState,
+) -> tuple[
+    pygame.Surface, pygame.Surface, threading.Thread, threading.Thread, threading.Event
+]:
+    """Creates new surfaces and starts new CPU and GPU rendering threads."""
+    half_width = state.width // 2
+    cpu_surface = pygame.Surface((half_width, state.height))
+    gpu_surface = pygame.Surface((half_width, state.height))
 
     stop_event = threading.Event()
+
     cpu_thread = threading.Thread(
         target=generate_cpu_half,
-        args=(0, 0, cpu_window, stop_event, app_state),
+        args=(0, 0, cpu_surface, stop_event, state),
         daemon=True,
     )
     gpu_thread = threading.Thread(
         target=generate_gpu_half,
-        args=(gpu_window, app_state),
+        args=(gpu_surface, state),
         daemon=True,
     )
 
     cpu_thread.start()
     gpu_thread.start()
+
+    return cpu_surface, gpu_surface, cpu_thread, gpu_thread, stop_event
+
+
+def main():
+    """Initializes Pygame and runs the main benchmark application loop."""
+    pygame.display.init()
+    app_state = AppState(width=1280, height=480, quality=2500)
+    app_window = pygame.display.set_mode(
+        (app_state.width, app_state.height),
+        pygame.RESIZABLE,
+    )
+    pygame.display.set_caption("Fractal Visualizer: CPU (Left) vs GPU (Right)")
+
+    cpu_window, gpu_window, cpu_thread, gpu_thread, stop_event = start_render_threads(
+        app_state
+    )
 
     app_running = True
     while app_running:
@@ -81,6 +99,25 @@ def main():
                 app_running = False
                 stop_event.set()
 
+            elif event.type == pygame.VIDEORESIZE:
+                stop_event.set()
+                app_state.width, app_state.height = event.size
+                app_window = pygame.display.set_mode(
+                    (app_state.width, app_state.height), pygame.RESIZABLE
+                )
+
+                cpu_window, gpu_window, cpu_thread, gpu_thread, stop_event = (
+                    start_render_threads(app_state)
+                )
+
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                stop_event.set()
+
+                cpu_window, gpu_window, cpu_thread, gpu_thread, stop_event = (
+                    start_render_threads(app_state)
+                )
+
+        half_width = app_state.width // 2
         app_window.blit(cpu_window, (0, 0))
         app_window.blit(gpu_window, (half_width, 0))
         pygame.display.flip()

@@ -10,57 +10,57 @@ The primary goal is to showcase a deep understanding of computer architecture fu
 
 ## 2. Core Architecture & Key Files
 
-The project follows a strict **separation of concerns** model, where the mathematical "engine" is completely decoupled from the user-facing application and display logic.
+The project follows a strict **separation of concerns** model. A central `AppState` class manages configuration, a mathematical "engine" is decoupled from the UI, and several application files act as entry points.
+
+* **`state.py` - The Application State Manager**
+    This file contains the `AppState` class, which centralizes all rendering parameters (like width, height, and quality) into a single object.
 
 * **`engine.py` - The Calculation & Coloring Engine**
-    This module is the core of the project, containing all mathematical and coloring logic. It has no knowledge of Pygame and deals only with data.
-    * `pixel_to_complex_cpu()`, `calculate_fractal_cpu()`, `colorer_cpu()`: The CPU-based functions. They operate on a **single** coordinate/pixel at a time.
-    * `calculate_fractal_gpu()`, `colorer_gpu()`: The GPU-based functions. They operate on the **entire grid** of pixels at once, using a custom CUDA kernel for calculation and NumPy vectorization for coloring.
+    This module contains all mathematical and coloring logic. It has no knowledge of Pygame and operates on data provided by the application files, often via an `AppState` object.
+    * `pixel_to_complex_cpu()`, `calculate_fractal_cpu()`, `colorer_cpu()`: The CPU-based functions that operate on a single coordinate at a time.
+    * `calculate_fractal_gpu()`, `colorer_gpu()`: The GPU-based functions that operate on an entire grid of pixels at once.
 
 * **`cpu_demo.py` - The CPU Application Entry Point**
-    This script is the user-facing application for the **CPU renderer**.
-    * Handles all Pygame window initialization and event handling.
-    * Runs a live rendering loop that calls the `_cpu` functions from the engine for each pixel, one by one, to visually demonstrate a serial workload.
+    This script is the user-facing application for the CPU renderer. It is now **multithreaded** to keep the UI responsive, moving the slow, pixel-by-pixel rendering to a background thread.
 
 * **`gpu_demo.py` - The GPU Application Entry Point**
-    This script is the user-facing application for the **GPU renderer**.
-    * Handles all Pygame window initialization and event handling.
-    * Calls `calculate_fractal_gpu()` and `colorer_gpu()` once to pre-render the entire image, then runs a simple loop to display the finished result.
+    This script is the user-facing application for the GPU renderer. It pre-renders the image and uses an efficient, **event-driven loop** (`pygame.event.wait()`) to minimize CPU usage while idle.
 
 * **`benchmark.py` - The CPU vs. GPU Benchmark**
-    This script is the primary demonstration piece of the project.
-    * It uses Python's **multithreading** to run the CPU and GPU rendering processes simultaneously.
-    * The left half of the window is rendered by the CPU thread, live, pixel-by-pixel.
-    * The right half of the window is rendered by the GPU thread instantly.
-    * This provides a direct, side-by-side visual comparison of the two computing paradigms.
+    This script is the primary demonstration piece. It uses multithreading to run both renderers simultaneously for a direct, visual performance comparison. It now includes performance timers that print results to the console.
+
+* **`test_engine.py` - Unit Tests**
+    This file contains unit tests for the core logic in `engine.py` using Python's built-in `unittest` framework.
 
 ---
 
 ## 3. Developer Workflows & Configuration
 
 * **To Run the Visualizer:**
-    * **CPU Version (Live Render)**: `python cpu_demo.py`
-    * **GPU Version (Instant Render)**: `python gpu_demo.py`
-    * **Benchmark (Side-by-Side)**: `python benchmark.py`
+    * **CPU Version**: `python cpu_demo.py`
+    * **GPU Version**: `python gpu_demo.py`
+    * **Benchmark**: `python benchmark.py`
+
+* **To Run Tests:**
+    * `python -m unittest discover`
 
 * **To Adjust Quality vs. Speed:**
-    * Modify the `QUALITY` constant at the top of the respective application file (`cpu_demo.py`, `gpu_demo.py`, or `benchmark.py`).
+    * Modify the values passed to the `AppState` constructor in the `main()` function of the respective application file.
 
 ---
 
 ## 4. Patterns, Conventions, & Dependencies
 
-* **Coordinate System**: All renderers translate pixel coordinates (e.g., `(x, y)`) to the complex plane (`a + bi`) by centering the origin and scaling the view to a `[-2.0, 2.0]` range on both axes.
-
-* **Dependencies**: This project requires `pygame`, `numpy`, and `cupy`. A matching NVIDIA CUDA Toolkit must be installed for `cupy` to function.
+* **State Management**: The `AppState` class is the single source of truth for rendering parameters. High-level orchestrator functions in the engine should accept the `AppState` object, while low-level pure functions should receive primitive types.
+* **Dependencies**: This project requires `pygame`, `numpy`, and `cupy` to run. Development requires `ruff` and `black`.
 
 ---
 
 ## 5. Recommendations for AI Agents
 
-* **Maintain Separation of Concerns**: All new mathematical or computational logic must be added to `engine.py`. All new UI or application flow logic must be added to the appropriate application file.
-* **Analyze Context**: Before suggesting code, analyze the active file. `cpu_demo.py` uses a serial, one-pixel-at-a-time workflow. `gpu_demo.py` and `benchmark.py` use a parallel, full-grid workflow for the GPU part. `benchmark.py` specifically uses multithreading.
-* **Document Professionally**: All new functions or classes must include a professional docstring that clearly explains their purpose, arguments (`Args:`), and return values (`Returns:`).
+* **Maintain Separation of Concerns**: Logic belongs in `engine.py`, application flow in the demo/benchmark files, and shared settings in `state.py`.
+* **Document Professionally**: All new functions must include a professional docstring explaining their purpose, `Args`, and `Returns`.
+* **Respect the Architecture**: The `cpu_demo.py` and `benchmark.py` applications are multithreaded. The `gpu_demo.py` application is event-driven. New features should respect these patterns.
 
 ---
 *This file should be updated as the project's structure or conventions evolve.*
