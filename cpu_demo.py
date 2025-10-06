@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 import pygame
+from state import AppState
 from engine import pixel_to_complex_cpu, calculate_fractal_cpu, colorer_cpu
-
-# PROGRAM CONTROL - adjust window size and quality/speed tradeoff
-# lower values for width, height, and quality increase rendering speed
-WIDTH, HEIGHT = 640, 480
-QUALITY = 25
 
 
 def main():
@@ -16,10 +12,12 @@ def main():
     It handles all user input and manages the application state.
     """
     pygame.display.init()
-    app_window = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
+    app_state = AppState(width=640, height=480, quality=25)
+    app_window = pygame.display.set_mode(
+        (app_state.width, app_state.height), pygame.RESIZABLE
+    )
     pygame.display.set_caption("Fractal Visualizer: CPU Rendering Pixel by Pixel")
 
-    current_width, current_height = WIDTH, HEIGHT
     x, y = 0, 0
     app_running = True
     while app_running:
@@ -28,9 +26,9 @@ def main():
                 app_running = False
 
             elif event.type == pygame.VIDEORESIZE:
-                current_width, current_height = event.size
+                app_state.width, app_state.height = event.size
                 app_window = pygame.display.set_mode(
-                    (current_width, current_height), pygame.RESIZABLE
+                    (app_state.width, app_state.height), pygame.RESIZABLE
                 )
                 x, y = 0, 0
 
@@ -38,15 +36,15 @@ def main():
                 app_window.fill((0, 0, 0))
                 x, y = 0, 0
 
-        if y < current_height:
-            translated_pixel = pixel_to_complex_cpu(x, y, current_width, current_height)
-            iteration_count = calculate_fractal_cpu(translated_pixel, QUALITY)
-            pixel_color = colorer_cpu(iteration_count, QUALITY)
+        if y < app_state.height:
+            translated_pixel = pixel_to_complex_cpu(x, y, app_state)
+            iteration_count = calculate_fractal_cpu(translated_pixel, app_state.quality)
+            pixel_color = colorer_cpu(iteration_count, app_state.quality)
             app_window.set_at((x, y), pixel_color)
             pygame.display.flip()
 
             x += 1
-            if x >= current_width:
+            if x >= app_state.width:
                 x = 0
                 y += 1
 

@@ -1,59 +1,58 @@
 #!/usr/bin/env python3
 import pygame
 import threading
+from state import AppState
 from engine import pixel_to_complex_cpu, calculate_fractal_cpu, colorer_cpu
 from engine import calculate_fractal_gpu, colorer_gpu
 
-# PROGRAM CONTROL - adjust window size and quality/speed tradeoff
-# lower values for width, height, and quality increase rendering speed
-WIDTH, HEIGHT = 1280, 480
-QUALITY = 2500
-
 
 def generate_cpu_half(
-    x: int,
-    y: int,
-    window: pygame.Surface,
-    width: int,
-    height: int,
-    stop_event: threading.Event,
+    x: int, y: int, window: pygame.Surface, stop_event: threading.Event, state: AppState
 ):
+    """Renders the CPU half of the benchmark by iterating pixel by pixel."""
+    half_width, height = window.get_size()
+    adjusted_state = AppState(width=half_width, height=height, quality=state.quality)
     while y < height and not stop_event.is_set():
-        translated_pixel = pixel_to_complex_cpu(x, y, width, height)
-        iteration_count = calculate_fractal_cpu(translated_pixel, QUALITY)
-        pixel_color = colorer_cpu(iteration_count, QUALITY)
+        translated_pixel = pixel_to_complex_cpu(x, y, adjusted_state)
+        iteration_count = calculate_fractal_cpu(translated_pixel, state.quality)
+        pixel_color = colorer_cpu(iteration_count, state.quality)
         window.set_at((x, y), pixel_color)
 
         x += 1
-        if x >= width:
+        if x >= state.width:
             x = 0
             y += 1
 
 
-def generate_gpu_half(window: pygame.Surface, width: int, height: int):
-    iteration_grid = calculate_fractal_gpu(width, height, QUALITY)
-    finished_image = colorer_gpu(iteration_grid, QUALITY)
+def generate_gpu_half(window: pygame.Surface, state: AppState):
+    """Renders the GPU half of the benchmark by calling the GPU engine functions."""
+    half_width, height = window.get_size()
+    adjusted_state = AppState(width=half_width, height=height, quality=state.quality)
+    iteration_grid = calculate_fractal_gpu(adjusted_state)
+    finished_image = colorer_gpu(iteration_grid, state.quality)
     window.blit(finished_image, (0, 0))
 
 
 def main():
+    """Initializes Pygame and runs the main benchmark application loop."""
     pygame.display.init()
-    app_window = pygame.display.set_mode((WIDTH, HEIGHT))
+    app_state = AppState(width=1280, height=480, quality=2500)
+    app_window = pygame.display.set_mode((app_state.width, app_state.height))
     pygame.display.set_caption("Fractal Visualizer: CPU (Left) vs GPU (Right)")
 
-    half_width = WIDTH // 2
-    cpu_window = pygame.Surface((half_width, HEIGHT))
-    gpu_window = pygame.Surface((half_width, HEIGHT))
+    half_width = app_state.width // 2
+    cpu_window = pygame.Surface((half_width, app_state.height))
+    gpu_window = pygame.Surface((half_width, app_state.height))
 
     stop_event = threading.Event()
     cpu_thread = threading.Thread(
         target=generate_cpu_half,
-        args=(0, 0, cpu_window, half_width, HEIGHT, stop_event),
+        args=(0, 0, cpu_window, stop_event, app_state),
         daemon=True,
     )
     gpu_thread = threading.Thread(
         target=generate_gpu_half,
-        args=(gpu_window, half_width, HEIGHT),
+        args=(gpu_window, app_state),
         daemon=True,
     )
     cpu_thread.start()

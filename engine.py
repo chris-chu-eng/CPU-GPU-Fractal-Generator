@@ -3,9 +3,10 @@ import numpy as np
 import pygame
 from cupy import RawKernel  # type: ignore
 from numpy.typing import NDArray
+from state import AppState
 
 
-def pixel_to_complex_cpu(x: int, y: int, width: int, height: int) -> complex:
+def pixel_to_complex_cpu(x: int, y: int, state: AppState) -> complex:
     """Converts a pixel coordinate to a point on the complex plane.
 
     Args:
@@ -17,10 +18,10 @@ def pixel_to_complex_cpu(x: int, y: int, width: int, height: int) -> complex:
     Returns:
         complex: The corresponding complex number for the given pixel.
     """
-    centered_x = x - (width / 2)
-    centered_y = y - (height / 2)
-    scaled_x = centered_x / width * 4
-    scaled_y = centered_y / height * 4
+    centered_x = x - (state.width / 2)
+    centered_y = y - (state.height / 2)
+    scaled_x = centered_x / state.width * 4
+    scaled_y = centered_y / state.height * 4
     return complex(scaled_x, scaled_y)
 
 
@@ -66,9 +67,7 @@ def colorer_cpu(current_iterations: int, max_iterations: int) -> tuple[int, int,
     return (red, green, blue)
 
 
-def calculate_fractal_gpu(
-    width: int, height: int, max_iterations: int
-) -> NDArray[np.int32]:
+def calculate_fractal_gpu(state: AppState) -> NDArray[np.int32]:
     """
     Generates a grid of Mandelbrot set iteration counts on the GPU using a
     custom CUDA kernel.
@@ -108,8 +107,8 @@ def calculate_fractal_gpu(
         output_iterations[index] = n;
     }
     """
-    real_axis = np.linspace(-2.0, 2.0, width, dtype=np.float64)
-    imaginary_axis = np.linspace(-2.0, 2.0, height, dtype=np.float64)
+    real_axis = np.linspace(-2.0, 2.0, state.width, dtype=np.float64)
+    imaginary_axis = np.linspace(-2.0, 2.0, state.height, dtype=np.float64)
     x_grid, y_grid = np.meshgrid(real_axis, imaginary_axis)
     cpu_gridbase = x_grid + (y_grid * 1j)
 
@@ -123,14 +122,16 @@ def calculate_fractal_gpu(
     )
 
     threads_per_block = (16, 16)
-    blocks_per_grid_x = (width + threads_per_block[0] - 1) // threads_per_block[0]
-    blocks_per_grid_y = (height + threads_per_block[1] - 1) // threads_per_block[1]
+    blocks_per_grid_x = (state.width + threads_per_block[0] - 1) // threads_per_block[0]
+    blocks_per_grid_y = (state.height + threads_per_block[1] - 1) // threads_per_block[
+        1
+    ]
     blocks_per_grid = (blocks_per_grid_x, blocks_per_grid_y)
 
     mandelbrot_kernel(
         blocks_per_grid,
         threads_per_block,
-        (gpu_gridbase, gpu_iterations, max_iterations, width, height),
+        (gpu_gridbase, gpu_iterations, state.quality, state.width, state.height),
     )
 
     return cp.asnumpy(gpu_iterations)  # type: ignore
