@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import pygame
 import threading
+import time
 from state import AppState
 from engine import pixel_to_complex_cpu, calculate_fractal_cpu, colorer_cpu
 from engine import calculate_fractal_gpu, colorer_gpu
@@ -10,8 +11,11 @@ def generate_cpu_half(
     x: int, y: int, window: pygame.Surface, stop_event: threading.Event, state: AppState
 ):
     """Renders the CPU half of the benchmark by iterating pixel by pixel."""
+    start_time = time.perf_counter()
+
     half_width, height = window.get_size()
     adjusted_state = AppState(width=half_width, height=height, quality=state.quality)
+
     while y < height and not stop_event.is_set():
         translated_pixel = pixel_to_complex_cpu(x, y, adjusted_state)
         iteration_count = calculate_fractal_cpu(translated_pixel, state.quality)
@@ -19,18 +23,29 @@ def generate_cpu_half(
         window.set_at((x, y), pixel_color)
 
         x += 1
-        if x >= state.width:
+        if x >= half_width:
             x = 0
             y += 1
+
+    end_time = time.perf_counter()
+    elapsed_time = (end_time - start_time) * 1000
+    print(f"CPU rendering: {elapsed_time:.2f} ms")
 
 
 def generate_gpu_half(window: pygame.Surface, state: AppState):
     """Renders the GPU half of the benchmark by calling the GPU engine functions."""
+    start_time = time.perf_counter()
+
     half_width, height = window.get_size()
     adjusted_state = AppState(width=half_width, height=height, quality=state.quality)
+
     iteration_grid = calculate_fractal_gpu(adjusted_state)
     finished_image = colorer_gpu(iteration_grid, state.quality)
     window.blit(finished_image, (0, 0))
+
+    end_time = time.perf_counter()
+    elapsed_time = (end_time - start_time) * 1000
+    print(f"GPU rendering: {elapsed_time:.2f} ms")
 
 
 def main():
@@ -55,6 +70,7 @@ def main():
         args=(gpu_window, app_state),
         daemon=True,
     )
+
     cpu_thread.start()
     gpu_thread.start()
 
