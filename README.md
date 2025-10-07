@@ -43,9 +43,14 @@ This project was built to demonstrate a foundational understanding of computer a
         source venv/bin/activate
         ```
 4.  **Install the required dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+    - For running the application:
+        ```bash
+        pip install -r requirements.txt
+        ```
+    - For development (including testing and formatting tools):
+        ```bash
+        pip install -r requirements-dev.txt
+        ```
 
 ### Execution
 - To run the primary benchmark comparison:
@@ -61,21 +66,27 @@ This project was built to demonstrate a foundational understanding of computer a
     python gpu_demo.py
     ```
 
-### Running Tests
-- To run the unit test suite:
+### Development Tools
+- **Running Tests**:
     ```bash
     python -m unittest discover
+    ```
+- **Checking Code Formatting**:
+    ```bash
+    black . --check
+    ```
+- **Linting Code**:
+    ```bash
+    ruff check .
     ```
 
 ---
 
 ## Technologies Used
-- **Python**
-- **Pygame** (for the user interface)
-- **NumPy** (for efficient CPU array creation)
-- **CuPy** (for GPU-accelerated operations)
-- **CUDA** (for the custom GPU kernel)
-- **Multithreading** (for responsive UI and benchmarking)
-- **Unit Testing** (with the `unittest` framework)
-- **Git / GitHub** (for version control)
-- **GitHub Actions** (for Continuous Integration)
+- **Core**: Python, Pygame, NumPy
+- **GPU Acceleration**: CuPy, CUDA (via CuPy RawKernel)
+- **Concurrency**: Python's `multithreading` module
+- **Testing**: Python's `unittest` framework
+- **Code Quality**: Black (formatter), Ruff (linter)
+- **Version Control**: Git / GitHub
+- **CI/CD**: GitHub Actions, Dependabot

@@ -10,7 +10,19 @@ from engine import calculate_fractal_gpu, colorer_gpu
 def generate_cpu_half(
     x: int, y: int, window: pygame.Surface, stop_event: threading.Event, state: AppState
 ):
-    """Renders the CPU half of the benchmark by iterating pixel by pixel."""
+    """Renders the CPU's half of the benchmark image, pixel by pixel.
+
+    Designed to be run in a background thread. Iterates sequentially through
+    each pixel of its target surface, calculates the fractal value, and draws
+    the result. Also measures and prints its total execution time.
+
+    Args:
+        x (int): The starting x-coordinate for the render.
+        y (int): The starting y-coordinate for the render.
+        window (pygame.Surface): The off-screen surface to draw onto.
+        stop_event (threading.Event): A signal to terminate the render early.
+        state (AppState): The main application state.
+    """
     start_time = time.perf_counter()
 
     half_width, height = window.get_size()
@@ -34,7 +46,16 @@ def generate_cpu_half(
 
 
 def generate_gpu_half(window: pygame.Surface, state: AppState):
-    """Renders the GPU half of the benchmark by calling the GPU engine functions."""
+    """Renders the GPU's half of the benchmark image in parallel.
+
+    Designed to be run in a background thread. Calls the GPU-accelerated
+    engine functions to generate the entire fractal at once. Also measures
+    and prints its total execution time.
+
+    Args:
+        window (pygame.Surface): The off-screen surface to draw onto.
+        state (AppState): The main application state.
+    """
     start_time = time.perf_counter()
 
     half_width, height = window.get_size()
@@ -54,7 +75,16 @@ def start_render_threads(
 ) -> tuple[
     pygame.Surface, pygame.Surface, threading.Thread, threading.Thread, threading.Event
 ]:
-    """Creates new surfaces and starts new CPU and GPU rendering threads."""
+    """Creates new surfaces and starts the CPU and GPU rendering threads.
+
+    Args:
+        state (AppState): The main application state, used to determine the
+                          size of the new render surfaces.
+
+    Returns:
+        tuple: A tuple containing the new CPU and GPU surfaces, the new CPU and
+               GPU thread objects, and the new stop event.
+    """
     half_width = state.width // 2
     cpu_surface = pygame.Surface((half_width, state.height))
     gpu_surface = pygame.Surface((half_width, state.height))
@@ -79,7 +109,12 @@ def start_render_threads(
 
 
 def main():
-    """Initializes Pygame and runs the main benchmark application loop."""
+    """Initializes Pygame and runs the main benchmark application loop.
+
+    Starts separate threads for the CPU and GPU renderers and enters a
+    responsive main loop to display their real-time progress. The loop also
+    handles events for quitting, resizing, refreshing, and zooming.
+    """
     pygame.display.init()
     app_state = AppState(width=1280, height=480, quality=2500)
     app_window = pygame.display.set_mode(

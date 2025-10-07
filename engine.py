@@ -7,13 +7,13 @@ from state import AppState
 
 
 def pixel_to_complex_cpu(x: int, y: int, state: AppState) -> complex:
-    """Converts a pixel coordinate to a point on the complex plane.
+    """Maps a pixel coordinate to its corresponding point on the complex plane.
 
     Args:
         x (int): The x-coordinate of the pixel.
         y (int): The y-coordinate of the pixel.
-        width (int): The total width of the application window.
-        height (int): The total height of the application window.
+        state (AppState): The application state containing view parameters like
+                          width and height.
 
     Returns:
         complex: The corresponding complex number for the given pixel.
@@ -22,11 +22,12 @@ def pixel_to_complex_cpu(x: int, y: int, state: AppState) -> complex:
     centered_y = y - (state.height / 2)
     scaled_x = centered_x / state.width * 4
     scaled_y = centered_y / state.height * 4
+
     return complex(scaled_x, scaled_y)
 
 
 def calculate_fractal_cpu(coordinate: complex, max_iterations: int) -> int:
-    """Tests a single point on the CPU to determine its Mandelbrot set iteration count.
+    """Calculates the Mandelbrot set iteration count for a single complex number.
 
     Args:
         coordinate (complex): The specific point on the complex plane to test.
@@ -47,16 +48,16 @@ def calculate_fractal_cpu(coordinate: complex, max_iterations: int) -> int:
 
 
 def colorer_cpu(current_iterations: int, max_iterations: int) -> tuple[int, int, int]:
-    """Converts a final iteration count into an RGB color tuple.
+    """Determines an RGB color for a given iteration count.
 
     Args:
         current_iterations (int): The final iteration count for a single point.
-        max_iterations (int): The same limit used in the calculation, to check
-                              if the point is in the set.
+        max_iterations (int): The render quality limit, used to check if the
+                              point is in the set.
 
     Returns:
-        tuple: An (R, G, B) color tuple. Returns black (0,0,0) for points
-               within the set, or a calculated color for points outside.
+        tuple[int, int, int]: An (R, G, B) color tuple. Returns black (0,0,0)
+                              for points within the set.
     """
     if current_iterations == max_iterations:
         return (0, 0, 0)
@@ -64,21 +65,23 @@ def colorer_cpu(current_iterations: int, max_iterations: int) -> tuple[int, int,
     blue = (current_iterations % 16) * 16
     red = (current_iterations % 8) * 32
     green = (current_iterations % 4) * 64
+
     return (red, green, blue)
 
 
 def calculate_fractal_gpu(state: AppState) -> NDArray[np.int32]:
-    """
-    Generates a grid of Mandelbrot set iteration counts on the GPU using a
-    custom CUDA kernel.
+    """Generates the complete grid of Mandelbrot set iteration counts on the GPU.
+
+    Uses a custom CUDA kernel to perform the calculation in parallel for all
+    pixels, based on the provided application state.
 
     Args:
-        width (int): The width of the image in pixels.
-        height (int): The height of the image in pixels.
-        max_iterations (int): The iteration limit for each point.
+        state (AppState): The application state containing all parameters for the
+                          render (width, height, quality, zoom, etc.).
 
     Returns:
-        numpy.ndarray: A 2D array containing the final iteration count for each pixel.
+        NDArray[np.int32]: A 2D NumPy array containing the final iteration count
+                           for every pixel.
     """
     mandelbrot_kernel_code = r"""
     #include <cupy/complex.cuh>
@@ -140,22 +143,19 @@ def calculate_fractal_gpu(state: AppState) -> NDArray[np.int32]:
 def colorer_gpu(
     iteration_grid: NDArray[np.int32], max_iterations: int
 ) -> pygame.Surface:
-    """Generates a colored Pygame surface from Mandelbrot set iteration data.
+    """Converts a grid of iteration counts into a colored Pygame surface.
 
-    Uses NumPy's vectorization to convert a 2D grid of iteration counts into a
-    colored image.
+    Uses NumPy's fast vectorization capabilities to process the entire grid
+    of iteration data at once.
 
     Args:
-        iteration_grid (numpy.ndarray): A 2D NumPy array of integers where each
-                                        value is the final iteration count for
-                                        a corresponding pixel. The shape is
-                                        (height, width).
-        max_iterations (int): The maximum number of iterations that was used to
-                              generate the grid. This value is used to identify
-                              points inside the Mandelbrot set.
+        iteration_grid (NDArray[np.int32]): A 2D NumPy array of iteration counts
+                                            from the GPU.
+        max_iterations (int): The render quality limit, used to identify points
+                              inside the set.
 
     Returns:
-        pygame.Surface: A Pygame surface object ready to be displayed.
+        pygame.Surface: A finished, colored Pygame surface object.
     """
     transposed_grid: NDArray[np.int32] = iteration_grid.T
     width, height = transposed_grid.shape

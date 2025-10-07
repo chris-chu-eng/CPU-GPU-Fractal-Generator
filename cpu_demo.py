@@ -8,9 +8,18 @@ from engine import pixel_to_complex_cpu, calculate_fractal_cpu, colorer_cpu
 def calculate_fractal(
     window: pygame.Surface, state: AppState, stop_event: threading.Event
 ):
-    """
-    A dedicated thread to render the fractal pixel by pixel onto a surface
-    without blocking the main application loop.
+    """Renders the fractal pixel by pixel in a background thread.
+
+    Intended to be the target of a `threading.Thread`. It iterates
+    over every pixel of the provided surface, calculates its Mandelbrot set
+    value, and draws the corresponding color. It will exit prematurely if the
+    stop_event is set.
+
+    Args:
+        window (pygame.Surface): The off-screen surface to draw the fractal onto.
+        state (AppState): The main application state, used for render settings like
+                          quality.
+        stop_event (threading.Event): An event that signals the thread to terminate.
     """
     x, y = 0, 0
     width, height = window.get_size()
@@ -29,6 +38,17 @@ def calculate_fractal(
 
 
 def start_render_thread(window: pygame.Surface, app_state: AppState):
+    """Creates, configures, and starts a new background rendering thread.
+
+    Args:
+        window (pygame.Surface): The off-screen surface for the new thread to draw on.
+        app_state (AppState): The main application state object to pass to the thread.
+
+    Returns:
+        tuple[threading.Thread, threading.Event]: A tuple containing the newly
+        created and started Thread object and its associated Event object, which
+        can be used to stop it.
+    """
     stop_event = threading.Event()
 
     render_thread = threading.Thread(
@@ -43,7 +63,12 @@ def start_render_thread(window: pygame.Surface, app_state: AppState):
 
 
 def main():
-    """Initializes Pygame and runs the main application loop."""
+    """Initializes Pygame and runs the main application loop for the CPU demo.
+
+    Initiates the fractal rendering process on a background thread to maintain
+    UI responsiveness. The main loop handles user input for quitting, resizing,
+    and refreshing, while continuously displaying the progressive render.
+    """
     pygame.display.init()
     app_state = AppState(width=640, height=480, quality=2500)
     app_window = pygame.display.set_mode(
@@ -63,13 +88,13 @@ def main():
 
             elif event.type == pygame.VIDEORESIZE:
                 stop_event.set()
-
                 app_state.width, app_state.height = event.size
+
                 app_window = pygame.display.set_mode(
                     (app_state.width, app_state.height), pygame.RESIZABLE
                 )
-                window = pygame.Surface((app_state.width, app_state.height))
 
+                window = pygame.Surface((app_state.width, app_state.height))
                 cpu_thread, stop_event = start_render_thread(window, app_state)
 
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:

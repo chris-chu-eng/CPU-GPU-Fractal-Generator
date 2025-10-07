@@ -5,7 +5,19 @@ from engine import calculate_fractal_gpu, colorer_gpu
 
 
 def calculate_and_draw(state: AppState, window: pygame.Surface) -> None:
-    """Calculates the fractal, colors it, and draws it to the window."""
+    """Handles the full process of rendering the fractal with the GPU and
+    updating the screen.
+
+    Uses the engine to calculate all the fractal data,
+    turns that data into a colored image, and then draws that final image
+    to the window.
+
+    Args:
+        state (AppState): The application's current settings, like window size
+                          and render quality.
+        window (pygame.Surface): The main Pygame window where the final fractal
+                                 will be drawn.
+    """
     iteration_grid = calculate_fractal_gpu(state)
     finished_image = colorer_gpu(iteration_grid, state.quality)
     window.blit(finished_image, (0, 0))
@@ -13,11 +25,12 @@ def calculate_and_draw(state: AppState, window: pygame.Surface) -> None:
 
 
 def main():
-    """Main application function for the GPU renderer.
+    """Initializes Pygame and runs the main event loop for the GPU visualizer.
 
-    This function executes the fractal generation by calling the GPU
-    calculation and CPU coloring functions, then runs the main display loop
-    to show the finished image.
+    Performs an initial, full-frame render using the GPU-accelerated helper
+    function. An efficient, event-driven loop then waits for user input to
+    handle window closing, resizing, and refresh events, re-rendering only
+    when necessary.
     """
     pygame.display.init()
     app_state = AppState(width=640, height=480, quality=2500)
