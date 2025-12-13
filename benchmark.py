@@ -42,7 +42,7 @@ def generate_cpu_half(
     end_time = time.perf_counter()
     if not stop_event.is_set():
         elapsed_time = (end_time - start_time) * 1000
-        print(f"CPU rendering: {elapsed_time:.2f} ms")
+        state.cpu_render_time = elapsed_time
 
 
 def generate_gpu_half(window: pygame.Surface, state: AppState):
@@ -67,7 +67,7 @@ def generate_gpu_half(window: pygame.Surface, state: AppState):
 
     end_time = time.perf_counter()
     elapsed_time = (end_time - start_time) * 1000
-    print(f"GPU rendering: {elapsed_time:.2f} ms")
+    state.gpu_render_time = elapsed_time
 
 
 def start_render_threads(
@@ -108,6 +108,37 @@ def start_render_threads(
     return cpu_surface, gpu_surface, cpu_thread, gpu_thread, stop_event
 
 
+def draw_ui(window: pygame.Surface, state: AppState, font: pygame.font.Font):
+    """Draws the overlay information (timers, resolution, quality) onto the screen."""
+    white = (255, 255, 255)
+    bg_color = (0, 0, 0)
+
+    cpu_label = font.render(" CPU (Serial) ", True, white, bg_color)
+    window.blit(cpu_label, (10, 10))
+
+    if state.cpu_render_time:
+        time_str = f" {state.cpu_render_time:.2f} ms "
+        cpu_time_surf = font.render(time_str, True, white, bg_color)
+        window.blit(cpu_time_surf, (10, 40))
+
+    half_width = state.width // 2
+    gpu_label = font.render(" GPU (Parallel) ", True, white, bg_color)
+    window.blit(gpu_label, (half_width + 10, 10))
+
+    if state.gpu_render_time:
+        time_str = f" {state.gpu_render_time:.2f} ms "
+        gpu_time_surf = font.render(time_str, True, white, bg_color)
+        window.blit(gpu_time_surf, (half_width + 10, 40))
+
+    status_text = f" Res: {state.width}x{state.height} | Quality: {state.quality} "
+    status_surf = font.render(status_text, True, white, bg_color)
+    window.blit(status_surf, (10, state.height - 30))
+
+    info_text = font.render(" Press 'R' to refresh ", True, white, bg_color)
+    text_rect = info_text.get_rect(bottomright=(state.width - 10, state.height - 10))
+    window.blit(info_text, text_rect)
+
+
 def main():
     """Initializes Pygame and runs the main benchmark application loop.
 
@@ -116,6 +147,8 @@ def main():
     handles events for quitting, resizing, refreshing, and zooming.
     """
     pygame.display.init()
+    pygame.font.init()
+    ui_font = pygame.font.SysFont(None, 26)
     app_state = AppState(width=1280, height=480, quality=2500)
     app_window = pygame.display.set_mode(
         (app_state.width, app_state.height),
@@ -155,6 +188,7 @@ def main():
         half_width = app_state.width // 2
         app_window.blit(cpu_window, (0, 0))
         app_window.blit(gpu_window, (half_width, 0))
+        draw_ui(app_window, app_state, ui_font)
         pygame.display.flip()
 
     cpu_thread.join(timeout=1.0)
