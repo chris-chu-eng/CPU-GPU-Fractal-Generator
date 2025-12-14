@@ -3,6 +3,7 @@ import pygame
 import threading
 from state import AppState
 from engine import pixel_to_complex_cpu, calculate_fractal_cpu, colorer_cpu
+from utils import draw_text_wrapped
 
 
 def calculate_fractal(
@@ -62,6 +63,37 @@ def start_render_thread(window: pygame.Surface, app_state: AppState):
     return render_thread, stop_event
 
 
+def draw_ui(window: pygame.Surface, state: AppState, font: pygame.font.Font):
+    """Draws the informational UI overlay onto the main window."""
+    if not state.show_ui:
+        return
+
+    white = (255, 255, 255)
+    bg_color = (0, 0, 0)
+
+    descript_text = (
+        "cpu_demo.py is a visual demonstration of serial computing. "
+        "It renders the Mandelbrot set pixel by pixel using only the CPU. "
+        "For the main showcase, run benchmark.py! "
+    )
+
+    draw_text_wrapped(
+        surface=window,
+        text=descript_text,
+        font=font,
+        color=white,
+        max_width=state.width - 20,
+        start_pos=(10, 10),
+    )
+
+    toggle_text = font.render(" Press 'T' to toggle overlay ", True, white, bg_color)
+    window.blit(toggle_text, (10, state.height - 30))
+
+    info_text = font.render(" Press 'R' to refresh ", True, white, bg_color)
+    text_rect = info_text.get_rect(bottomright=(state.width - 10, state.height - 10))
+    window.blit(info_text, text_rect)
+
+
 def main():
     """Initializes Pygame and runs the main application loop for the CPU demo.
 
@@ -70,6 +102,8 @@ def main():
     and refreshing, while continuously displaying the progressive render.
     """
     pygame.display.init()
+    pygame.font.init()
+    ui_font = pygame.font.SysFont(None, 26)
     app_state = AppState(width=640, height=480, quality=2500)
     app_window = pygame.display.set_mode(
         (app_state.width, app_state.height), pygame.RESIZABLE
@@ -97,13 +131,18 @@ def main():
                 window = pygame.Surface((app_state.width, app_state.height))
                 cpu_thread, stop_event = start_render_thread(window, app_state)
 
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                stop_event.set()
-                window.fill((0, 0, 0))
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    stop_event.set()
+                    window.fill((0, 0, 0))
 
-                cpu_thread, stop_event = start_render_thread(window, app_state)
+                    cpu_thread, stop_event = start_render_thread(window, app_state)
+
+                elif event.key == pygame.K_t:
+                    app_state.show_ui = not app_state.show_ui
 
         app_window.blit(window, (0, 0))
+        draw_ui(app_window, app_state, ui_font)
         pygame.display.flip()
 
     cpu_thread.join(timeout=1.0)

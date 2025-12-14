@@ -110,6 +110,9 @@ def start_render_threads(
 
 def draw_ui(window: pygame.Surface, state: AppState, font: pygame.font.Font):
     """Draws the overlay information (timers, resolution, quality) onto the screen."""
+    if not state.show_ui:
+        return
+
     white = (255, 255, 255)
     bg_color = (0, 0, 0)
 
@@ -134,7 +137,9 @@ def draw_ui(window: pygame.Surface, state: AppState, font: pygame.font.Font):
     status_surf = font.render(status_text, True, white, bg_color)
     window.blit(status_surf, (10, state.height - 30))
 
-    info_text = font.render(" Press 'R' to refresh ", True, white, bg_color)
+    info_text = font.render(
+        " Press 'T' to toggle overlay | Press 'R' to refresh ", True, white, bg_color
+    )
     text_rect = info_text.get_rect(bottomright=(state.width - 10, state.height - 10))
     window.blit(info_text, text_rect)
 
@@ -154,7 +159,9 @@ def main():
         (app_state.width, app_state.height),
         pygame.RESIZABLE,
     )
-    pygame.display.set_caption("Fractal Visualizer: CPU (Left) vs GPU (Right)")
+    pygame.display.set_caption(
+        "Fractal Visualizer: A Demonstration of Parallel Computing"
+    )
 
     cpu_window, gpu_window, cpu_thread, gpu_thread, stop_event = start_render_threads(
         app_state
@@ -178,12 +185,16 @@ def main():
                     start_render_threads(app_state)
                 )
 
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                stop_event.set()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    stop_event.set()
 
-                cpu_window, gpu_window, cpu_thread, gpu_thread, stop_event = (
-                    start_render_threads(app_state)
-                )
+                    cpu_window, gpu_window, cpu_thread, gpu_thread, stop_event = (
+                        start_render_threads(app_state)
+                    )
+
+                elif event.key == pygame.K_t:
+                    app_state.show_ui = not app_state.show_ui
 
         half_width = app_state.width // 2
         app_window.blit(cpu_window, (0, 0))

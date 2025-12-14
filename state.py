@@ -11,3 +11,4 @@ class AppState:
     quality: int
     cpu_render_time: Optional[float] = None
     gpu_render_time: Optional[float] = None
+    show_ui: bool = True
