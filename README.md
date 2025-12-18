@@ -14,6 +14,14 @@ This project was built to demonstrate a foundational understanding of computer a
 - **Modular Codebase**: The project is organized with a separation of concerns, with a central `AppState` class for configuration, calculation logic in `engine.py`, and application logic in the demo/benchmark files.
 
 ---
+## Performance Demonstration
+>**Note:** The video below uses a preview of an upcoming UI implementation for a future version. Currently available in branch 'feature/ui'.
+
+
+https://github.com/user-attachments/assets/3bb636b7-dd0a-4e4d-9e24-4783510d201e
+
+
+---
 
 ## How to Run
 
